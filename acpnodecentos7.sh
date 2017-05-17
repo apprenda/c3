@@ -8,6 +8,23 @@ $1 in
     install)
             echo "Installing dependencies"
             yum -y install wget libcgroup cifs-utils nano openssh-clients libcgroup-tools unzip iptables-services net-tools
+            service cgconfig start
+            echo "root:${rootPass}" | chpasswd
+            echo "Updating domain info in resolv.conf"
+            cat > /etc/resolv.conf << EOF
+            nameserver ${dcip}
+            search ${domainName}.${domainSuf}
+            domain ${domainName}.${domainSuf}
+            EOF
+            chattr +i /etc/resolv.conf
+            echo "Updating hosts file"
+            x=$(hostname -I)
+            eval ipval=($x)
+            ip=${ipval[0]}
+            echo "$ip ${serverName}" >> /etc/hosts
+            hostnamectl set-hostname ${serverName}
+            echo "Updating sshd to allow root login via ssh"
+            sed -i 's/#\?\(RSAAuthentication\s*\).*$/\1 yes/' /etc/ssh/sshd_config
             echo "Creating repo mounts"
             mkdir -p /apprenda/repo/apps
             mkdir -p /apprenda/repo/sys
